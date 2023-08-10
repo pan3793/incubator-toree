@@ -15,6 +15,7 @@
  *  limitations under the License
  */
 
+import sbt.testing.AnnotatedFingerprint
 import scala.util.Properties
 
 // Version settings
@@ -229,3 +230,36 @@ assembly / assemblyMergeStrategy := {
 assembly / test := {}
 assembly / assemblyOption := (assembly / assemblyOption).value.copy(includeScala = false)
 assembly / aggregate := false
+
+scalaInterpreter / Test / testGrouping := {
+  val tests: Seq[TestDefinition] = (Test / definedTests).value
+  val defaultForkOptions = ForkOptions(
+    javaHome = javaHome.value,
+    outputStrategy = outputStrategy.value,
+    bootJars = Vector.empty[java.io.File],
+    workingDirectory = Some(baseDirectory.value),
+    runJVMOptions = (Test / javaOptions).value.toVector,
+    connectInput = connectInput.value,
+    envVars = (Test / envVars).value
+  )
+  tests.groupBy { test: TestDefinition =>
+    test.fingerprint match {
+      case af: AnnotatedFingerprint
+        if af.annotationName() == "org.apache.toree.annotations.SbtForked" => test.name
+      case other => "default_test_group"
+    }
+  }.map { case (groupName, groupTests) =>
+    val forkOptions = {
+      if (groupName == "default_test_group") {
+        defaultForkOptions
+      } else {
+        defaultForkOptions.withRunJVMOptions(defaultForkOptions.runJVMOptions ++
+          Seq(s"-Djava.io.tmpdir=${baseDirectory.value}/target/tmp/$groupName"))
+      }
+    }
+    new Tests.Group(
+      name = groupName,
+      tests = groupTests,
+      runPolicy = Tests.SubProcess(forkOptions))
+  }
+}.toSeq

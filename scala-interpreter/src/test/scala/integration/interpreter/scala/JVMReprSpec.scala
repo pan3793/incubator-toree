@@ -34,7 +34,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.util.Random
 
 @SbtForked
-@Ignore
 class JVMReprSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAfter {
 
   private val outputResult = new ByteArrayOutputStream()
