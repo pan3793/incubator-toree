@@ -42,18 +42,15 @@ jobs:
       TEST_DILATION: 3
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         clean: true
-    - name: Checkout
-      uses: actions/setup-java@v2
+    - name: Install JDK/SBT
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: ${{ matrix.java }}
-    - name: Add SBT launcher
-      run: |
-        mkdir -p $HOME/.sbt/launchers/1.3.12
-        curl -L -o $HOME/.sbt/launchers/1.3.12/sbt-launch.jar https://repo1.maven.org/maven2/org/scala-sbt/sbt-launch/1.3.12/sbt-launch.jar
+        cache: 'sbt'
     - name: Build
       run: |
         make SCALA_VERSION=${{ matrix.scala }} clean release
@@ -64,6 +61,6 @@ jobs:
 #    - name: Run system tests
 #      run: |
 #        make SCALA_VERSION=${{ matrix.scala }} system-test
-    - name: Run license eudit
+    - name: Run license audit
       run: |
         make SCALA_VERSION=${{ matrix.scala }} audit-licenses
