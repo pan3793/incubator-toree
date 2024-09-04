@@ -17,13 +17,17 @@
 
 import scala.util.Properties
 
+lazy val scala212 = "2.12.15"
+lazy val scala213 = "2.13.8"
+lazy val supportedScalaVersions = List(scala212, scala213)
+
 // Version settings
 ThisBuild / version := Properties.envOrElse("VERSION", "0.0.0-dev") +
   (if ((ThisBuild / isSnapshot ).value) "-SNAPSHOT" else "")
 ThisBuild / isSnapshot := Properties.envOrElse("IS_SNAPSHOT","true").toBoolean
 ThisBuild / organization := "org.apache.toree.kernel"
 ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.8")
-ThisBuild / scalaVersion := (ThisBuild / crossScalaVersions).value.last
+ThisBuild / scalaVersion := scala213
 ThisBuild / Dependencies.sparkVersion := {
   val envVar = "APACHE_SPARK_VERSION"
   val defaultVersion = "3.3.2"
@@ -40,10 +44,9 @@ ThisBuild / Dependencies.sparkVersion := {
 
 // Compiler settings
 ThisBuild / scalacOptions ++= Seq(
-//  "-deprecation",
+  "-deprecation",
   "-unchecked",
   "-feature",
-//  "-Xfatal-warnings",
   "-language:reflectiveCalls",
   "-target:jvm-1.8"
 )
@@ -117,12 +120,10 @@ ThisBuild / credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
 /** Root Toree project. */
 lazy val root = (project in file("."))
-  .settings(name := "toree", crossScalaVersions := Nil)
+  // crossScalaVersions must be set to Nil on the aggregating project
+  .settings(name := "toree", crossScalaVersions := Nil, publish / skip := true)
   .aggregate(
     macros,protocol,plugins,communication,kernelApi,client,scalaInterpreter,sqlInterpreter,kernel
-  )
-  .dependsOn(
-    macros,protocol,communication,kernelApi,client,scalaInterpreter,sqlInterpreter,kernel
   )
 
 /**
@@ -202,10 +203,7 @@ lazy val kernel = (project in file("kernel"))
 enablePlugins(ScalaUnidocPlugin)
 (ScalaUnidoc / unidoc / scalacOptions) ++= Seq(
   "-Ymacro-expand:none",
-  "-skip-packages", Seq(
-    "org.apache.pekko",
-    "scala"
-  ).mkString(":"),
+  "-skip-packages", "org.apache.pekko:scala",
   "-no-link-warnings" // Suppresses problems with Scaladoc @throws links
 )
 
